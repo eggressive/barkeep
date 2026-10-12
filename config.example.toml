@@ -1,0 +1,12 @@
+[ai]
+model = "claude-sonnet-4-5-20250929"
+ollama_model = "qwen3.5:0.8b"
+ollama_url = "http://localhost:11434"
+# anthropic_key = "sk-ant-..."   # env var ANTHROPIC_API_KEY takes priority
+
+# Example: the echo server used by the test suite makes a fine first demo.
+[[mcp.server]]
+name = "echo"
+command = "python3"
+# Use an absolute path; relative paths resolve against the binary's cwd.
+args = ["tests/fixtures/echo_mcp_server.py"]
