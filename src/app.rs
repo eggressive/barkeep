@@ -304,10 +304,14 @@ impl Palette {
                     Some(d) => format!("{} \u{2014} {}", app.name, d),
                     None => app.name.clone(),
                 };
-                button(text(label).size(14))
+                let label = container(text(label).size(14))
+                    .width(Length::Fill)
+                    .align_x(iced::alignment::Horizontal::Left);
+                button(label)
                     .on_press(Message::LaunchApp(app.exec.clone()))
                     .padding(8)
                     .width(Length::Fill)
+                    .style(launcher_row)
                     .into()
             })
             .collect();
@@ -352,10 +356,14 @@ impl Palette {
                     "{} \u{00b7} {} \u{2014} {}",
                     server, tool.name, tool.description
                 );
-                button(text(label).size(14))
+                let label = container(text(label).size(14))
+                    .width(Length::Fill)
+                    .align_x(iced::alignment::Horizontal::Left);
+                button(label)
                     .on_press(Message::QueryChanged(format!("#{} ", tool.name)))
                     .padding(8)
                     .width(Length::Fill)
+                    .style(launcher_row)
                     .into()
             })
             .collect();
@@ -370,6 +378,27 @@ impl Palette {
         subs.push(iced::keyboard::listen().filter_map(escape_key));
         subs.push(iced::window::open_events().map(Message::WindowOpened));
         Subscription::batch(subs)
+    }
+}
+
+/// Launcher list row: transparent at rest, subtle primary tint on hover/press.
+/// iced 0.14's default button style fills with the palette primary
+/// (#5865F2), which turns a list into a wall of purple blocks.
+fn launcher_row(
+    theme: &Theme,
+    status: iced::widget::button::Status,
+) -> iced::widget::button::Style {
+    let palette = theme.extended_palette();
+    iced::widget::button::Style {
+        background: match status {
+            iced::widget::button::Status::Hovered | iced::widget::button::Status::Pressed => {
+                Some(iced::Background::Color(palette.primary.weak.color))
+            }
+            _ => None,
+        },
+        text_color: theme.palette().text,
+        border: iced::border::rounded(4),
+        ..Default::default()
     }
 }
 
