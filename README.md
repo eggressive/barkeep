@@ -14,7 +14,10 @@ written to be small, tested, and honest about what works.
   AI as a bolt-on plugin, and none speak MCP natively.
 - MCP is the point, not a feature: every configured stdio server's tools show up in
   the palette and run in-process.
-- Claude when you have a key, local Ollama when you don't. No lock-in either way.
+- No AI vendor owns the default. An ordered provider list: Ollama (local or its
+  cloud models), any OpenAI-compatible endpoint (LM Studio, vLLM, OpenRouter,
+  OpenAI, Groq...), or Anthropic - whichever answers first wins, the rest are
+  fallbacks.
 
 ## Usage
 
@@ -27,7 +30,7 @@ written to be small, tested, and honest about what works.
 | Query | Mode |
 |---|---|
 | `firefox` | fuzzy app search, Enter launches |
-| `? explain this error` | streams an AI answer (Claude, Ollama fallback) |
+| `? explain this error` | streams an AI answer from your provider list |
 | `#echo {"text":"hi"}` | MCP tool search and invoke |
 
 App entries come from freedesktop `.desktop` files; Exec field codes (`%f`, `%u` ...) are stripped before launch.
@@ -37,11 +40,20 @@ App entries come from freedesktop `.desktop` files; Exec field codes (`%f`, `%u`
 `~/.config/barkeep/config.toml` (all optional):
 
 ```toml
-[ai]
+# Ordered: first provider that answers wins, the rest are fallbacks.
+[[ai.provider]]
+type = "ollama"                    # native client, handles thinking models
+model = "qwen3.5:0.8b"
+
+[[ai.provider]]
+type = "openai-compat"             # any OpenAI-compatible server
+model = "whatever-the-server-calls-it"
+url = "http://localhost:1234/v1"   # /v1 optional, appended if missing
+api_key_env = "STUDIO_KEY"
+
+[[ai.provider]]
+type = "anthropic"                 # key from config or ANTHROPIC_API_KEY
 model = "claude-sonnet-4-5-20250929"
-ollama_model = "qwen3.5:0.8b"
-ollama_url = "http://localhost:11434"
-# anthropic_key = "sk-ant-..."   # env var ANTHROPIC_API_KEY takes priority
 
 [[mcp.server]]
 name = "echo"

@@ -1,16 +1,17 @@
-use super::{AiError, StreamEvent};
-use crate::config::AiConfig;
-use futures_util::{SinkExt, StreamExt};
+use super::{AiError, ChunkSink};
+use crate::config::ProviderConfig;
+use futures_util::StreamExt;
 
-/// Stream a completion from a local Ollama server (NDJSON /api/generate).
+/// Stream a completion from an Ollama server (native NDJSON /api/generate).
+/// Handles thinking-capable models whose tokens arrive in `thinking`.
 pub async fn stream(
-    cfg: &AiConfig,
+    p: &ProviderConfig,
     prompt: &str,
-    sender: &mut iced::futures::channel::mpsc::Sender<StreamEvent>,
+    sink: &mut ChunkSink<'_>,
 ) -> Result<(), AiError> {
-    let url = format!("{}/api/generate", cfg.ollama_url.trim_end_matches('/'));
+    let url = format!("{}/api/generate", p.base_url());
     let body = serde_json::json!({
-        "model": cfg.ollama_model,
+        "model": p.model,
         "prompt": prompt,
         "stream": true,
     });
@@ -45,7 +46,7 @@ pub async fn stream(
             if let Some(text) = v["response"].as_str() {
                 if !text.is_empty() {
                     saw_response = true;
-                    let _ = sender.send(StreamEvent::Chunk(text.to_string())).await;
+                    sink.chunk(text.to_string()).await;
                 }
             }
             if let Some(t) = v["thinking"].as_str() {
@@ -54,7 +55,7 @@ pub async fn stream(
             if v["done"].as_bool() == Some(true) {
                 // Thinking-capable models may emit only `thinking` tokens.
                 if !saw_response && !thinking.is_empty() {
-                    let _ = sender.send(StreamEvent::Chunk(thinking)).await;
+                    sink.chunk(thinking).await;
                 }
                 return Ok(());
             }

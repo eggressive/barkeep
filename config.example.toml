@@ -1,12 +1,28 @@
-[ai]
-model = "claude-sonnet-4-5-20250929"
-ollama_model = "qwen3.5:0.8b"
-ollama_url = "http://localhost:11434"
-# anthropic_key = "sk-ant-..."   # env var ANTHROPIC_API_KEY takes priority
+# Ordered: the first provider that answers wins, the rest are fallbacks.
+# No brand owns the default - the order is yours.
 
-# Example: the echo server used by the test suite makes a fine first demo.
+[[ai.provider]]
+type = "ollama"
+model = "qwen3.5:0.8b"
+
+# One openai-compat client covers LM Studio, vLLM, OpenRouter, OpenAI,
+# Groq, Ollama's /v1 endpoint, and most of the market.
+# url may end in /v1 or not - barkeep appends what is missing.
+# [[ai.provider]]
+# type = "openai-compat"
+# model = "whatever-the-server-calls-it"
+# url = "http://localhost:1234/v1"
+# api_key_env = "STUDIO_KEY"
+
+# [[ai.provider]]
+# type = "anthropic"
+# model = "claude-sonnet-4-5-20250929"
+# api_key = "sk-ant-..."        # or export ANTHROPIC_API_KEY
+
+# MCP servers: stdio JSON-RPC, tools appear in the palette via '#'.
+# Use absolute paths; relative paths resolve against the binary's cwd.
+
 [[mcp.server]]
 name = "echo"
 command = "python3"
-# Use an absolute path; relative paths resolve against the binary's cwd.
 args = ["tests/fixtures/echo_mcp_server.py"]

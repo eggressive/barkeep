@@ -140,8 +140,8 @@ impl Palette {
                     }
                     self.ai_text.clear();
                     self.ai_streaming = true;
-                    let cfg = self.config.ai.clone();
-                    let events = ai::stream_answer(cfg, prompt);
+                    let providers = self.config.ai.providers.clone();
+                    let events = ai::ask(providers, prompt);
                     use iced::futures::StreamExt;
                     Task::stream(events.map(|ev| match ev {
                         StreamEvent::Chunk(c) => Message::AiChunk(c),

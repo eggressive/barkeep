@@ -1,25 +1,16 @@
-use super::{AiError, StreamEvent};
-use futures_util::{SinkExt, StreamExt};
+use super::{AiError, ChunkSink};
+use futures_util::StreamExt;
 use reqwest_eventsource::{Event, EventSource};
 
-pub const ANTHROPIC_API_KEY_ENV: &str = "ANTHROPIC_API_KEY";
-const API_URL: &str = "https://api.anthropic.com/v1/messages";
+pub const API_URL: &str = "https://api.anthropic.com/v1/messages";
 const API_VERSION: &str = "2023-06-01";
-
-/// Env var wins over config file key.
-pub fn anthropic_key(cfg: &crate::config::AiConfig) -> Option<String> {
-    match std::env::var(ANTHROPIC_API_KEY_ENV) {
-        Ok(k) if !k.trim().is_empty() => Some(k),
-        _ => cfg.anthropic_key.clone().filter(|k| !k.trim().is_empty()),
-    }
-}
 
 /// Stream a completion from the Anthropic Messages API via SSE.
 pub async fn stream(
     api_key: &str,
     model: &str,
     prompt: &str,
-    sender: &mut iced::futures::channel::mpsc::Sender<StreamEvent>,
+    sink: &mut ChunkSink<'_>,
 ) -> Result<(), AiError> {
     let body = serde_json::json!({
         "model": model,
@@ -45,7 +36,7 @@ pub async fn stream(
                 "content_block_delta" => {
                     if let Ok(data) = serde_json::from_str::<serde_json::Value>(&msg.data) {
                         if let Some(text) = data["delta"]["text"].as_str() {
-                            let _ = sender.send(StreamEvent::Chunk(text.to_string())).await;
+                            sink.chunk(text.to_string()).await;
                         }
                     }
                 }
